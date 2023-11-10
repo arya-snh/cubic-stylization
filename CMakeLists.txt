@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(example)
-
+set(CMAKE_VERBOSE_MAKEFILE ON)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Libigl
@@ -24,8 +24,8 @@ igl_include(glfw)
 #igl_include(restricted mosek)
 #igl_include(restricted triangle)
 
-# Add your project files
-file(GLOB SRC_FILES *.cpp)
+include_directories(helper)
+file(GLOB SRC_FILES *.cpp helper/*.cpp)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 # Link igl (and the glfw module) to your project
