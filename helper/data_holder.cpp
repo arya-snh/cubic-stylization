@@ -25,9 +25,8 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
 
     igl::arap_rhs(V,F,V.cols(),igl::ARAP_ENERGY_TYPE_SPOKES_AND_RIMS, K);
 
-    hEList.resize(V.rows());
+    half_edges.resize(V.rows());
     W.resize(V.rows());
-    dVList.resize(V.rows());
     vector<int> adjFacei;
 
     int v0, v1, v2; //vertices forming a face
@@ -36,7 +35,7 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     {   
         adjFacei = adj_F[i];
 
-        hEList[i].resize(adjFacei.size()*3, 2);
+        half_edges[i].resize(adjFacei.size()*3, 2);
         W[i].resize(adjFacei.size()*3);
         for (int j=0; j<adjFacei.size(); j++)
         {
@@ -46,23 +45,18 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
             v2 = F(adjFacei[j],2);
 
             // compute adjacent half-edge indices of a vertex
-            hEList[i](3*j  ,0) = v0;
-            hEList[i](3*j  ,1) = v1;
-            hEList[i](3*j+1,0) = v1;
-            hEList[i](3*j+1,1) = v2;
-            hEList[i](3*j+2,0) = v2;
-            hEList[i](3*j+2,1) = v0;
+            half_edges[i](3*j  ,0) = v0;
+            half_edges[i](3*j  ,1) = v1;
+            half_edges[i](3*j+1,0) = v1;
+            half_edges[i](3*j+1,1) = v2;
+            half_edges[i](3*j+2,0) = v2;
+            half_edges[i](3*j+2,1) = v0;
 
             W[i](3*j  ) = cotangent_matrix.coeff(v0,v1);
             W[i](3*j+1) = cotangent_matrix.coeff(v1,v2);
             W[i](3*j+2) = cotangent_matrix.coeff(v2,v0);
         }
-
-        dVList[i].resize(3, adjFacei.size()*3);
-        MatrixXd V_hE0, V_hE1;
-        igl::slice(V,hEList[i].col(0),1,V_hE0);
-        igl::slice(V,hEList[i].col(1),1,V_hE1);
-        dVList[i] = (V_hE1 - V_hE0).transpose();
+        
     }
 
     igl::min_quad_with_fixed_precompute(cotangent_matrix, q, SparseMatrix<double>(), false, solver_data);
@@ -75,16 +69,16 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
 
 void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll)
 {
-    igl::parallel_for(V.rows(), [this, &RAll, &U](const int ii)
+    igl::parallel_for(V.rows(), [this, &RAll, &U, &V](const int i)
         {
-            VectorXd z = z_a.col(ii);
-            VectorXd u = u_a.col(ii);
-            VectorXd n = per_vertex_normals.row(ii).transpose();
-            double rho = rho_a(ii);
+            VectorXd z = z_a.col(i);
+            VectorXd u = u_a.col(i);
+            VectorXd n = per_vertex_normals.row(i).transpose();
+            double rho = rho_a(i);
             Matrix3d R;
-
-            MatrixXi hE = hEList[ii];
-            MatrixXd dU(3,hE.rows()); 
+            
+            MatrixXi hE = half_edges[i];
+            MatrixXd dU(3, hE.rows()); 
             {
                 MatrixXd U_hE0, U_hE1;
                 igl::slice(U,hE.col(0),1,U_hE0);
@@ -92,18 +86,24 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 dU = (U_hE1 - U_hE0).transpose();
             }
 
-            MatrixXd dV = dVList[ii];
-            VectorXd WVec = W[ii];
-            Matrix3d Spre = dV * WVec.asDiagonal() * dU.transpose();
+            MatrixXd dV(3, hE.rows()); 
+            {
+                MatrixXd V_hE0, V_hE1;
+                igl::slice(V,hE.col(0),1,V_hE0);
+                igl::slice(V,hE.col(1),1,V_hE1);
+                dV = (V_hE1 - V_hE0).transpose();
+            }
+
+            Matrix3d M_ = dV * W[i].asDiagonal() * dU.transpose();
 
             // Scaled Dual ADMM
             for (int k=0; k<maxi; k++)
             {
                 // update R
-                Matrix3d S = Spre + (rho * n * (z-u).transpose());
+                Matrix3d M = M_ + (rho * n * (z-u).transpose());
                 
                 JacobiSVD<Matrix3d> svd;
-                svd.compute(S, Eigen::ComputeFullU | Eigen::ComputeFullV );
+                svd.compute(M, Eigen::ComputeFullU | Eigen::ComputeFullV );
                 Matrix3d SU = svd.matrixU();
                 Matrix3d SV = svd.matrixV();
                 R = SV * SU.transpose();
@@ -116,24 +116,21 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 assert(R.determinant() > 0);
 
                 // update z
-                VectorXd zOld = z;
+                VectorXd z_prev = z;
 
                 Eigen::VectorXd x = R*n+u;
-                double kk = lambda* barycentric_area(ii)/rho;
+                double kk = lambda*barycentric_area(i)/rho;
                 VectorXd tmp1 = x.array() - kk;
-                VectorXd posMax = tmp1.array().max(0.0);
-
                 VectorXd tmp2 = -x.array() - kk;
-                VectorXd negMax = tmp2.array().max(0.0);
 
-                z = posMax - negMax;
+                z = tmp1.array().max(0.0) - tmp2.array().max(0.0);
 
                 // update u
                 u.noalias() += R*n - z;
 
                 // compute residual
                 double r_norm = (z - R*n).norm();
-                double s_norm = (-rho * (z - zOld)).norm();
+                double s_norm = (-rho * (z - z_prev)).norm();
                 
                 // from boyd
                 // update rho & u
@@ -149,10 +146,10 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 }
 
             }
-            z_a.col(ii) = z;
-            u_a.col(ii) = u;
-            rho_a(ii) = rho;
-            RAll.block(0,3*ii,3,3) = R; 
+            z_a.col(i) = z;
+            u_a.col(i) = u;
+            rho_a(i) = rho;
+            RAll.block(0,3*i,3,3) = R; 
         }   
     ,1000);
 }

@@ -32,8 +32,7 @@ class data_holder
     //maximum iterations for ADMM
 	double maxi;
 
-    std::vector<Eigen::MatrixXi> hEList;
-	std::vector<Eigen::MatrixXd> dVList;
+    std::vector<Eigen::MatrixXi> half_edges;
 	std::vector<Eigen::VectorXd> W;
 
 	Eigen::SparseMatrix<double> cotangent_matrix;
