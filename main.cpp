@@ -41,11 +41,11 @@ int main(int argc, char *argv[])
 
 void perturb(const Eigen::MatrixXd & V, Eigen::MatrixXd & V_tilde, data_holder & data) {
 
-  MatrixXd RAll(3,V.rows()*3);
-  data.local_step(V, V_tilde, RAll);
+  MatrixXd R(3,V.rows()*3);
+  data.local_step(V, V_tilde, R);
     
   VectorXd Rcol;
-  igl::columnize(RAll, V.rows(), 2, Rcol);
+  igl::columnize(R, V.rows(), 2, Rcol);
   VectorXd Bcol = data.K * Rcol;
   for(int k=0; k<V.cols(); k++)
   {
