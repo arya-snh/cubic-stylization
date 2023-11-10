@@ -14,20 +14,15 @@ int main(int argc, char *argv[])
     
   MatrixXd V, V_tilde;
 	MatrixXi F;
-  data_holder perturb;
+  double lambda;
+  
 	string meshName = argv[1];
   string mesh = MESH_DIRECTORY + meshName;
-  perturb.lambda = stod(argv[2]);
-
   igl::readOBJ(mesh, V, F);
+
+  lambda = stod(argv[2]);
+  
   V_tilde = V;
-
-  {
-      perturb.bc.resize(1,3);
-      perturb.bc << V.row(F(0,0));
-
-      perturb.b.resize(1);
-      perturb.b << F(0,0);
-  }
-
+  data_holder perturbed_data(V, F, lambda);
+  
 }
