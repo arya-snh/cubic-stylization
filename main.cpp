@@ -7,7 +7,7 @@
 using namespace Eigen;
 using namespace std;
 
-void perturb(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, data_holder & data);
+void perturb(MatrixXd & V, MatrixXd & U, data_holder & data);
 
 int main(int argc, char *argv[])
 {
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   viewer.launch();
 }
 
-void perturb(const Eigen::MatrixXd & V, Eigen::MatrixXd & V_tilde, data_holder & data) {
+void perturb(MatrixXd & V, MatrixXd & V_tilde, data_holder & data) {
 
   //obtain rotation matrix from local step
   MatrixXd R(3,V.rows()*3);

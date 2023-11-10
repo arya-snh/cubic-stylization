@@ -83,8 +83,6 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
             double rho = rho_a(ii);
             Matrix3d R;
 
-            // get energy parameters
-            // Note: dVn = [dV n], dUn = [dU z-u]
             MatrixXi hE = hEList[ii];
             MatrixXd dU(3,hE.rows()); 
             {
@@ -101,7 +99,7 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
             // Scaled Dual ADMM
             for (int k=0; k<maxi; k++)
             {
-                // R step
+                // update R
                 Matrix3d S = Spre + (rho * n * (z-u).transpose());
                 
                 JacobiSVD<Matrix3d> svd;
@@ -117,7 +115,7 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
 
                 assert(R.determinant() > 0);
 
-                // z step
+                // update z
                 VectorXd zOld = z;
 
                 Eigen::VectorXd x = R*n+u;
@@ -130,14 +128,15 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
 
                 z = posMax - negMax;
 
-                // u step
+                // update u
                 u.noalias() += R*n - z;
 
                 // compute residual
                 double r_norm = (z - R*n).norm();
                 double s_norm = (-rho * (z - zOld)).norm();
                 
-                // rho step
+                // from boyd
+                // update rho & u
                 if (r_norm > mu * s_norm)
                 {
                     rho = tao * rho;
