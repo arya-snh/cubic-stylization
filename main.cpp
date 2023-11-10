@@ -7,7 +7,7 @@
 using namespace Eigen;
 using namespace std;
 
-void single_iteration(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, data_holder & data);
+void perturb(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, data_holder & data);
 
 int main(int argc, char *argv[])
 {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   for (int i=0; i<5; i++)
   {
       std::cout<<i<<"\n";
-      single_iteration(V, V_tilde, perturbed_data);
+      perturb(V, V_tilde, perturbed_data);
   }
 
   igl::opengl::glfw::Viewer viewer;
@@ -39,28 +39,23 @@ int main(int argc, char *argv[])
   viewer.launch();
 }
 
-void single_iteration(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, data_holder & data) {
+void perturb(const Eigen::MatrixXd & V, Eigen::MatrixXd & V_tilde, data_holder & data) {
 
   MatrixXd RAll(3,V.rows()*3);
-    {
-        data.local_step(V, U, RAll, data);
-    }
-
-  MatrixXd Upre = U;
-    {
-        VectorXd Rcol;
-        igl::columnize(RAll, V.rows(), 2, Rcol);
-        VectorXd Bcol = data.K * Rcol;
-        for(int dim=0; dim<V.cols(); dim++)
-        {
-            VectorXd Uc,Bc,bcc;
-            Bc = Bcol.block(dim*V.rows(),0,V.rows(),1);
-            bcc = data.boundary_condition.col(dim);
-            min_quad_with_fixed_solve(
-                data.solver_data,Bc,bcc,VectorXd(),Uc);
-            U.col(dim) = Uc;
-        }
-    }
+  data.local_step(V, V_tilde, RAll);
+    
+  VectorXd Rcol;
+  igl::columnize(RAll, V.rows(), 2, Rcol);
+  VectorXd Bcol = data.K * Rcol;
+  for(int k=0; k<V.cols(); k++)
+  {
+      VectorXd V_tilde_c, Bc, bcc;
+      Bc = Bcol.block(k*V.rows(), 0, V.rows(), 1);
+      bcc = data.boundary_condition.col(k);
+      min_quad_with_fixed_solve(data.solver_data, Bc, bcc, VectorXd(), V_tilde_c);
+      V_tilde.col(k) = V_tilde_c;
+  }
+    
 }
 
 

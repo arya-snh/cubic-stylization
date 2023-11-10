@@ -73,19 +73,19 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
 
 }
 
-void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll, data_holder & data)
+void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll)
 {
-    igl::parallel_for(V.rows(), [&data, &RAll, &U](const int ii)
+    igl::parallel_for(V.rows(), [this, &RAll, &U](const int ii)
         {
-            VectorXd z = data.z_a.col(ii);
-            VectorXd u = data.u_a.col(ii);
-            VectorXd n = data.per_vertex_normals.row(ii).transpose();
-            double rho = data.rho_a(ii);
+            VectorXd z = z_a.col(ii);
+            VectorXd u = u_a.col(ii);
+            VectorXd n = per_vertex_normals.row(ii).transpose();
+            double rho = rho_a(ii);
             Matrix3d R;
 
             // get energy parameters
             // Note: dVn = [dV n], dUn = [dU z-u]
-            MatrixXi hE = data.hEList[ii];
+            MatrixXi hE = hEList[ii];
             MatrixXd dU(3,hE.rows()); 
             {
                 MatrixXd U_hE0, U_hE1;
@@ -94,12 +94,12 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 dU = (U_hE1 - U_hE0).transpose();
             }
 
-            MatrixXd dV = data.dVList[ii];
-            VectorXd WVec = data.W[ii];
+            MatrixXd dV = dVList[ii];
+            VectorXd WVec = W[ii];
             Matrix3d Spre = dV * WVec.asDiagonal() * dU.transpose();
 
             // Scaled Dual ADMM
-            for (int k=0; k<data.maxi; k++)
+            for (int k=0; k<maxi; k++)
             {
                 // R step
                 Matrix3d S = Spre + (rho * n * (z-u).transpose());
@@ -121,7 +121,7 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 VectorXd zOld = z;
 
                 Eigen::VectorXd x = R*n+u;
-                double kk = data.lambda* data.barycentric_area(ii)/rho;
+                double kk = lambda* barycentric_area(ii)/rho;
                 VectorXd tmp1 = x.array() - kk;
                 VectorXd posMax = tmp1.array().max(0.0);
 
@@ -138,21 +138,21 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 double s_norm = (-rho * (z - zOld)).norm();
                 
                 // rho step
-                if (r_norm > data.mu * s_norm)
+                if (r_norm > mu * s_norm)
                 {
-                    rho = data.tao * rho;
-                    u = u / data.tao;
+                    rho = tao * rho;
+                    u = u / tao;
                 }
-                else if (s_norm > data.mu * r_norm)
+                else if (s_norm > mu * r_norm)
                 {
-                    rho = rho / data.tao;
-                    u = u * data.tao;
+                    rho = rho / tao;
+                    u = u * tao;
                 }
 
             }
-            data.z_a.col(ii) = z;
-            data.u_a.col(ii) = u;
-            data.rho_a(ii) = rho;
+            z_a.col(ii) = z;
+            u_a.col(ii) = u;
+            rho_a(ii) = rho;
             RAll.block(0,3*ii,3,3) = R; 
         }   
     ,1000);

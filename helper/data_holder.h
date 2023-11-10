@@ -47,7 +47,7 @@ class data_holder
 	Eigen::MatrixXd boundary_condition;
 	Eigen::SparseMatrix<double> K;
     data_holder(Eigen::MatrixXd & V, Eigen::MatrixXi & F, double _lambda);
-	void local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll, data_holder & data);
+	void local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll);
 };
 
 #endif
