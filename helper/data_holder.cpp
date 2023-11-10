@@ -56,7 +56,6 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
             W[i](3*j+1) = cotangent_matrix.coeff(v1,v2);
             W[i](3*j+2) = cotangent_matrix.coeff(v2,v0);
         }
-        
     }
 
     igl::min_quad_with_fixed_precompute(cotangent_matrix, q, SparseMatrix<double>(), false, solver_data);
@@ -79,20 +78,19 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
             
             MatrixXi hE = half_edges[i];
             MatrixXd dU(3, hE.rows()); 
-            {
-                MatrixXd U_hE0, U_hE1;
-                igl::slice(U,hE.col(0),1,U_hE0);
-                igl::slice(U,hE.col(1),1,U_hE1);
-                dU = (U_hE1 - U_hE0).transpose();
-            }
-
+            
+            MatrixXd U_hE0, U_hE1;
+            igl::slice(U,hE.col(0),1,U_hE0);
+            igl::slice(U,hE.col(1),1,U_hE1);
+            dU = (U_hE1 - U_hE0).transpose();
+            
             MatrixXd dV(3, hE.rows()); 
-            {
-                MatrixXd V_hE0, V_hE1;
-                igl::slice(V,hE.col(0),1,V_hE0);
-                igl::slice(V,hE.col(1),1,V_hE1);
-                dV = (V_hE1 - V_hE0).transpose();
-            }
+            
+            MatrixXd V_hE0, V_hE1;
+            igl::slice(V,hE.col(0),1,V_hE0);
+            igl::slice(V,hE.col(1),1,V_hE1);
+            dV = (V_hE1 - V_hE0).transpose();
+            
 
             Matrix3d M_ = dV * W[i].asDiagonal() * dU.transpose();
 
@@ -104,16 +102,14 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 
                 JacobiSVD<Matrix3d> svd;
                 svd.compute(M, Eigen::ComputeFullU | Eigen::ComputeFullV );
-                Matrix3d SU = svd.matrixU();
-                Matrix3d SV = svd.matrixV();
-                R = SV * SU.transpose();
+                Matrix3d u__ = svd.matrixU();
+                Matrix3d v__ = svd.matrixV();
+                R = v__ * u__.transpose();
                 if (R.determinant() < 0)
                 {
-                    SU.col(2) = -SU.col(2);
-                    R = SV * SU.transpose();
+                    u__.col(2) = -u__.col(2);
+                    R = v__ * u__.transpose();
                 }
-
-                assert(R.determinant() > 0);
 
                 // update z
                 VectorXd z_prev = z;

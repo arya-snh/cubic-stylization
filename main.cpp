@@ -45,17 +45,7 @@ void perturb(MatrixXd & V, MatrixXd & V_tilde, data_holder & data) {
   data.local_step(V, V_tilde, R);
     
   //obtain new vertices from global step (using R)
-  VectorXd Rcol;
-  columnize(R, V.rows(), 2, Rcol);
-  VectorXd Bcol = data.K * Rcol;
-  for(int k=0; k<V.cols(); k++)
-  {
-      VectorXd V_tilde_c, Bc, bcc;
-      Bc = Bcol.block(k*V.rows(), 0, V.rows(), 1);
-      bcc = data.boundary_condition.col(k);
-      min_quad_with_fixed_solve(data.solver_data, Bc, bcc, VectorXd(), V_tilde_c);
-      V_tilde.col(k) = V_tilde_c;
-  }
+  
 }
 
 
