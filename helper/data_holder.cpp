@@ -72,3 +72,88 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     rho_a.resize(V.rows()); rho_a.setConstant(1e-4);
 
 }
+
+void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll, data_holder & data)
+{
+    igl::parallel_for(V.rows(), [&data, &RAll, &U](const int ii)
+        {
+            VectorXd z = data.z_a.col(ii);
+            VectorXd u = data.u_a.col(ii);
+            VectorXd n = data.per_vertex_normals.row(ii).transpose();
+            double rho = data.rho_a(ii);
+            Matrix3d R;
+
+            // get energy parameters
+            // Note: dVn = [dV n], dUn = [dU z-u]
+            MatrixXi hE = data.hEList[ii];
+            MatrixXd dU(3,hE.rows()); 
+            {
+                MatrixXd U_hE0, U_hE1;
+                igl::slice(U,hE.col(0),1,U_hE0);
+                igl::slice(U,hE.col(1),1,U_hE1);
+                dU = (U_hE1 - U_hE0).transpose();
+            }
+
+            MatrixXd dV = data.dVList[ii];
+            VectorXd WVec = data.W[ii];
+            Matrix3d Spre = dV * WVec.asDiagonal() * dU.transpose();
+
+            // Scaled Dual ADMM
+            for (int k=0; k<data.maxi; k++)
+            {
+                // R step
+                Matrix3d S = Spre + (rho * n * (z-u).transpose());
+                
+                JacobiSVD<Matrix3d> svd;
+                svd.compute(S, Eigen::ComputeFullU | Eigen::ComputeFullV );
+                Matrix3d SU = svd.matrixU();
+                Matrix3d SV = svd.matrixV();
+                R = SV * SU.transpose();
+                if (R.determinant() < 0)
+                {
+                    SU.col(2) = -SU.col(2);
+                    R = SV * SU.transpose();
+                }
+
+                assert(R.determinant() > 0);
+
+                // z step
+                VectorXd zOld = z;
+
+                Eigen::VectorXd x = R*n+u;
+                double kk = data.lambda* data.barycentric_area(ii)/rho;
+                VectorXd tmp1 = x.array() - kk;
+                VectorXd posMax = tmp1.array().max(0.0);
+
+                VectorXd tmp2 = -x.array() - kk;
+                VectorXd negMax = tmp2.array().max(0.0);
+
+                z = posMax - negMax;
+
+                // u step
+                u.noalias() += R*n - z;
+
+                // compute residual
+                double r_norm = (z - R*n).norm();
+                double s_norm = (-rho * (z - zOld)).norm();
+                
+                // rho step
+                if (r_norm > data.mu * s_norm)
+                {
+                    rho = data.tao * rho;
+                    u = u / data.tao;
+                }
+                else if (s_norm > data.mu * r_norm)
+                {
+                    rho = rho / data.tao;
+                    u = u * data.tao;
+                }
+
+            }
+            data.z_a.col(ii) = z;
+            data.u_a.col(ii) = u;
+            data.rho_a(ii) = rho;
+            RAll.block(0,3*ii,3,3) = R; 
+        }   
+    ,1000);
+}

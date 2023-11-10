@@ -36,17 +36,18 @@ class data_holder
 	std::vector<Eigen::MatrixXd> dVList;
 	std::vector<Eigen::VectorXd> W;
 
-	Eigen::SparseMatrix<double> K, cotangent_matrix;
+	Eigen::SparseMatrix<double> cotangent_matrix;
 	Eigen::MatrixXd per_vertex_normals, barycentric_area, z_a, u_a;
 	Eigen::VectorXd rho_a;
 
-	Eigen::MatrixXd boundary_condition;
 	Eigen::VectorXi q;  //fixed vertex
 
-	igl::min_quad_with_fixed_data<double> solver_data;
-
     public:
+	igl::min_quad_with_fixed_data<double> solver_data;
+	Eigen::MatrixXd boundary_condition;
+	Eigen::SparseMatrix<double> K;
     data_holder(Eigen::MatrixXd & V, Eigen::MatrixXi & F, double _lambda);
+	void local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll, data_holder & data);
 };
 
 #endif
