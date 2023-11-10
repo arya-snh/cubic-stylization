@@ -8,17 +8,17 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     maxi = 100;
 
     boundary_condition.resize(1,3);
-    boundary_condition << V.row(F(0,0));
+    boundary_condition << V.row(F(1,1));
 
     q.resize(1);
-    q << F(0,0);
-
-    igl::per_vertex_normals(V,F, per_vertex_normals);
-    igl::cotmatrix(V,F,cotangent_matrix);
+    q << F(1,1);
 
     Eigen::SparseMatrix<double> M;
     igl::massmatrix(V,F,igl::MASSMATRIX_TYPE_BARYCENTRIC,M);
     barycentric_area = M.diagonal();
+
+    igl::per_vertex_normals(V,F, per_vertex_normals);
+    igl::cotmatrix(V,F,cotangent_matrix);
 
     vector<vector<int>> adj_F, nI;
     igl::vertex_triangle_adjacency(V.rows(),F,adj_F, nI);
