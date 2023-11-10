@@ -41,9 +41,11 @@ int main(int argc, char *argv[])
 
 void perturb(const Eigen::MatrixXd & V, Eigen::MatrixXd & V_tilde, data_holder & data) {
 
+  //obtain rotation matrix from local step
   MatrixXd R(3,V.rows()*3);
   data.local_step(V, V_tilde, R);
     
+  //obtain new vertices from global step (using R)
   VectorXd Rcol;
   igl::columnize(R, V.rows(), 2, Rcol);
   VectorXd Bcol = data.K * Rcol;
