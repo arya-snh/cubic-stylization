@@ -76,21 +76,18 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
             double rho = rho_a(i);
             Matrix3d R;
             
-            MatrixXi hE = half_edges[i];
-            MatrixXd dU(3, hE.rows()); 
-            
-            MatrixXd U_hE0, U_hE1;
-            igl::slice(U,hE.col(0),1,U_hE0);
-            igl::slice(U,hE.col(1),1,U_hE1);
-            dU = (U_hE1 - U_hE0).transpose();
-            
-            MatrixXd dV(3, hE.rows()); 
-            
-            MatrixXd V_hE0, V_hE1;
-            igl::slice(V,hE.col(0),1,V_hE0);
-            igl::slice(V,hE.col(1),1,V_hE1);
-            dV = (V_hE1 - V_hE0).transpose();
-            
+            MatrixXi h = half_edges[i];
+            MatrixXd half_edge1, half_edge2;
+
+            MatrixXd dU(3, h.rows()); 
+            igl::slice(U,h.col(0),1,half_edge1);
+            igl::slice(U,h.col(1),1,half_edge2);
+            dU = (half_edge1 - half_edge2).transpose();
+        
+            MatrixXd dV(3, h.rows()); 
+            igl::slice(V,h.col(0),1,half_edge1);
+            igl::slice(V,h.col(1),1,half_edge2);
+            dV = (half_edge1 - half_edge2).transpose();
 
             Matrix3d M_ = dV * W[i].asDiagonal() * dU.transpose();
 
