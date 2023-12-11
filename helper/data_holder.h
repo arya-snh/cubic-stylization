@@ -24,15 +24,13 @@ class data_holder
 {
     private:
     //degree of cubeness
-    double lambda;
+    Eigen::VectorXd lambda;
 
     //Boyd penalty update parameters
 	double mu, tao;
 
     //maximum iterations for ADMM
 	double maxi;
-
-    
 
     std::vector<Eigen::MatrixXi> half_edges;
 	std::vector<Eigen::VectorXd> W;

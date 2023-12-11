@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
   V_tilde = V;
   data_holder perturbed_data(V, F, lambda);
   std::ofstream outFile;
-  outFile.open("../objective_values.csv", std::ios::out | std::ios::app);
+  outFile.open("../objective_values_stopping_criteria.csv", std::ios::out | std::ios::app);
 
-  for (int i=0; i<5; i++)
+  for (int i=0; i<10; i++)
   {
       std::cout<<i<<"\n";
       double objVal = perturb(V, V_tilde, perturbed_data);

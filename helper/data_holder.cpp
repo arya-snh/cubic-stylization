@@ -4,7 +4,7 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     
     mu = 10;
     tao = 2;
-    lambda = _lambda;
+    // lambda = _lambda;
     maxi = 100;
 
     objVal_a.setZero(V.rows());
@@ -66,10 +66,19 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     u_a.resize(3, V.rows()); u_a.setRandom();
     rho_a.resize(V.rows()); rho_a.setConstant(1e-4);
 
+    lambda.resize(V.rows());
+    double minZ = V.col(2).minCoeff();
+    double maxZ = V.col(2).maxCoeff();
+    for (int i = 0; i < V.rows(); ++i) {
+        double zNorm = (V(i, 2) - minZ) / (maxZ - minZ);
+        lambda(i) = zNorm * _lambda ; // Linear interpolation between 0.2 and _lambda
+    }
+
 }
 
 void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eigen::MatrixXd & RAll)
 {
+    objVal_a.setZero(V.rows());
     igl::parallel_for(V.rows(), [this, &RAll, &U, &V](const int i)
         {
             VectorXd z = z_a.col(i);
@@ -114,7 +123,7 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 VectorXd z_prev = z;
 
                 Eigen::VectorXd x = R*n+u;
-                double kk = lambda*barycentric_area(i)/rho;
+                double kk = lambda(i)*barycentric_area(i)/rho;
                 VectorXd tmp1 = x.array() - kk;
                 VectorXd tmp2 = -x.array() - kk;
 
@@ -139,15 +148,34 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                     rho = rho / tao;
                     u = u * tao;
                 }
+                
 
+                // adding stopping criteria 
+                // double nz = double(z.size());
+                // double ABSTOL = 1e-3;
+	            // double RELTOL = 1e-1;
+                // double eps_pri = sqrt(2.0*nz)*ABSTOL + RELTOL*max( (R*n).norm(),z.norm() );
+                // double eps_dual = sqrt(1.0*nz)*ABSTOL + RELTOL* ((rho*u).norm());
+                // if ( (r_norm<eps_pri)  && (s_norm<eps_dual) ) {
+                //     z_a.col(i) = z;
+                //     u_a.col(i) = u;
+                //     rho_a(i) = rho;
+                //     RAll.block(0,3*i,3,3) = R; 
+                //     objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
+                //                 + lambda * barycentric_area(i) * (R*n).cwiseAbs().sum();
+                //     objVal_a(i) = objVal;
+                //     break;
+                // }
             }
+
             z_a.col(i) = z;
             u_a.col(i) = u;
             rho_a(i) = rho;
             RAll.block(0,3*i,3,3) = R; 
             objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
-                        + lambda * barycentric_area(i) * (R*n).cwiseAbs().sum();
+                        + lambda(i) * barycentric_area(i) * (R*n).cwiseAbs().sum();
             objVal_a(i) = objVal;
+            
         }   
     ,1000);
     objVal = objVal_a.sum();
