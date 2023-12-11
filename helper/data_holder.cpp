@@ -69,8 +69,11 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     lambda.resize(V.rows());
     double minZ = V.col(2).minCoeff();
     double maxZ = V.col(2).maxCoeff();
+    double midZ = minZ + 0.3 * (maxZ - minZ);
+    double zNorm;
     for (int i = 0; i < V.rows(); ++i) {
-        double zNorm = (V(i, 2) - minZ) / (maxZ - minZ);
+        if (V(i, 2) < midZ) zNorm = 0;
+        else zNorm = (V(i, 2) - midZ) / (maxZ - midZ);
         lambda(i) = zNorm * _lambda ; // Linear interpolation between 0.2 and _lambda
     }
 
