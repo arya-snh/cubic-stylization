@@ -7,6 +7,11 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     lambda = _lambda;
     maxi = 100;
 
+    boundary_condition.resize(1,3);
+    boundary_condition << V.row(F(1,1));
+
+    q.resize(1);
+    q << F(1,1);
 
     Eigen::SparseMatrix<double> M;
     igl::massmatrix(V,F,igl::MASSMATRIX_TYPE_BARYCENTRIC,M);
@@ -17,6 +22,8 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
 
     vector<vector<int>> adj_F, nI;
     igl::vertex_triangle_adjacency(V.rows(),F,adj_F, nI);
+
+    igl::arap_rhs(V,F,V.cols(),igl::ARAP_ENERGY_TYPE_SPOKES_AND_RIMS, K);
 
     half_edges.resize(V.rows());
     W.resize(V.rows());
@@ -50,6 +57,8 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
             W[i](3*j+2) = cotangent_matrix.coeff(v2,v0);
         }
     }
+
+    igl::min_quad_with_fixed_precompute(cotangent_matrix, q, SparseMatrix<double>(), false, solver_data);
 
     z_a.resize(3, V.rows()); z_a.setRandom();
     u_a.resize(3, V.rows()); u_a.setRandom();
