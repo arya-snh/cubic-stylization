@@ -7,6 +7,8 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     lambda = _lambda;
     maxi = 100;
 
+    objVal_a.setZero(V.rows());
+
     boundary_condition.resize(1,3);
     boundary_condition << V.row(F(1,1));
 
@@ -143,6 +145,10 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
             u_a.col(i) = u;
             rho_a(i) = rho;
             RAll.block(0,3*i,3,3) = R; 
+            objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
+                        + lambda * barycentric_area(i) * (R*n).cwiseAbs().sum();
+            objVal_a(i) = objVal;
         }   
     ,1000);
+    objVal = objVal_a.sum();
 }

@@ -32,16 +32,20 @@ class data_holder
     //maximum iterations for ADMM
 	double maxi;
 
+    
+
     std::vector<Eigen::MatrixXi> half_edges;
 	std::vector<Eigen::VectorXd> W;
 
 	Eigen::SparseMatrix<double> cotangent_matrix;
 	Eigen::MatrixXd per_vertex_normals, barycentric_area, z_a, u_a;
-	Eigen::VectorXd rho_a;
+	Eigen::VectorXd rho_a, objVal_a;
 
 	Eigen::VectorXi q;  //fixed vertex
 
     public:
+    //to check convergence
+    double objVal = 0;
 	igl::min_quad_with_fixed_data<double> solver_data;
 	Eigen::MatrixXd boundary_condition;
 	Eigen::SparseMatrix<double> K;
