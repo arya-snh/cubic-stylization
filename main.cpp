@@ -55,14 +55,14 @@ void perturb(MatrixXd & V, MatrixXd & V_tilde, data_holder & data) {
   //obtain new vertices from global step (using R)
   VectorXd Rcol;
   columnize(R, V.rows(), 2, Rcol);
-  VectorXd Bcol = data.K * Rcol;
+  VectorXd Bcol = data.K * Rcol; //
   for(int k=0; k<V.cols(); k++)
   {
-      VectorXd V_tilde_c, Bc, bcc;
-      Bc = Bcol.block(k*V.rows(), 0, V.rows(), 1);
-      bcc = data.boundary_condition.col(k);
-      min_quad_with_fixed_solve(data.solver_data, Bc, bcc, VectorXd(), V_tilde_c);
-      V_tilde.col(k) = V_tilde_c;
+      VectorXd V_tilde_k, B_k, bc_k;
+      B_k = Bcol.block(k*V.rows(), 0, V.rows(), 1);
+      bc_k = data.boundary_condition.col(k);
+      min_quad_with_fixed_solve(data.solver_data, B_k, bc_k, VectorXd(), V_tilde_k);
+      V_tilde.col(k) = V_tilde_k;
   }
   
 }

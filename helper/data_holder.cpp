@@ -18,12 +18,14 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
     barycentric_area = M.diagonal();
 
     igl::per_vertex_normals(V,F, per_vertex_normals);
-    igl::cotmatrix(V,F,cotangent_matrix);
 
     vector<vector<int>> adj_F, nI;
     igl::vertex_triangle_adjacency(V.rows(),F,adj_F, nI);
 
+    igl::cotmatrix(V,F,cotangent_matrix);
     igl::arap_rhs(V,F,V.cols(),igl::ARAP_ENERGY_TYPE_SPOKES_AND_RIMS, K);
+    igl::min_quad_with_fixed_precompute(cotangent_matrix, q, SparseMatrix<double>(), false, solver_data);
+
 
     half_edges.resize(V.rows());
     W.resize(V.rows());
@@ -57,8 +59,6 @@ data_holder::data_holder(Eigen::MatrixXd& V, Eigen::MatrixXi& F, double _lambda)
             W[i](3*j+2) = cotangent_matrix.coeff(v2,v0);
         }
     }
-
-    igl::min_quad_with_fixed_precompute(cotangent_matrix, q, SparseMatrix<double>(), false, solver_data);
 
     z_a.resize(3, V.rows()); z_a.setRandom();
     u_a.resize(3, V.rows()); u_a.setRandom();
