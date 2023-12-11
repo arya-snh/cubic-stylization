@@ -1,3 +1,12 @@
+/*
+ * @file main.cpp
+ * @brief This code computes the rotation matrix
+ * to use to deform vertices 
+ *
+ * @author Arya Sinha, Shantanu Dixit
+ * @date November 10, 2023
+ */
+
 #include <igl/readOBJ.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/columnize.h>
@@ -12,13 +21,12 @@ void perturb(MatrixXd & V, MatrixXd & U, data_holder & data);
 
 int main(int argc, char *argv[])
 {
-  //Command to run: ./binary_file [mesh] [lambda] 
     
   MatrixXd V, V_tilde;
 	MatrixXi F;
   
   string name = argv[1];
-  string mesh = "/home/iiitd/Documents/cubic-stylization/meshes/" + name;
+  string mesh = "/home/arya/Downloads/project_mid_eval_2020498_2020118/meshes/" + name;
   readOBJ(mesh, V, F);
 
   double lambda = stod(argv[2]);

@@ -1,0 +1,22 @@
+sudo apt-get install \
+git \
+build-essential \
+cmake \
+libx11-dev \
+mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
+libxrandr-dev \
+libxi-dev \
+libxmu-dev \
+libblas-dev \
+libxinerama-dev \
+libxcursor-dev
+
+sudo apt install libeigen3-dev
+
+sudo apt install build-essential
+sudo apt install g++
+sudo apt install mesa-common-dev
+sudo apt install mesa-utils
+sudo apt install make cmake cmake-curses-gui
+sudo apt install libglfw3 libglfw3-dev libglm-dev
+sudo apt install libglew-dev
