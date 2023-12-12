@@ -13,8 +13,8 @@ plt.style.use('seaborn-v0_8-pastel')
 rows_per_param = 10 # Adjust this based on your data
 
 # Assigning parameter values manually
-data['Parameter'] = "With"
-data.loc[rows_per_param:rows_per_param*2-1, 'Parameter'] = "Without"
+data['Parameter'] = "Without"
+data.loc[rows_per_param:rows_per_param*2-1, 'Parameter'] = "With"
 # Plotting
 plt.figure(figsize=(10, 6))
 

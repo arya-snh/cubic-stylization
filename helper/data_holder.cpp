@@ -154,30 +154,30 @@ void data_holder::local_step(const Eigen::MatrixXd & V, Eigen::MatrixXd & U, Eig
                 
 
                 // adding stopping criteria 
-                // double nz = double(z.size());
-                // double ABSTOL = 1e-3;
-	            // double RELTOL = 1e-1;
-                // double eps_pri = sqrt(2.0*nz)*ABSTOL + RELTOL*max( (R*n).norm(),z.norm() );
-                // double eps_dual = sqrt(1.0*nz)*ABSTOL + RELTOL* ((rho*u).norm());
-                // if ( (r_norm<eps_pri)  && (s_norm<eps_dual) ) {
-                //     z_a.col(i) = z;
-                //     u_a.col(i) = u;
-                //     rho_a(i) = rho;
-                //     RAll.block(0,3*i,3,3) = R; 
-                //     objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
-                //                 + lambda * barycentric_area(i) * (R*n).cwiseAbs().sum();
-                //     objVal_a(i) = objVal;
-                //     break;
-                // }
+                double nz = double(z.size());
+                double ABSTOL = 1e-3;
+	            double RELTOL = 1e-1;
+                double eps_pri = sqrt(2.0*nz)*ABSTOL + RELTOL*max( (R*n).norm(),z.norm() );
+                double eps_dual = sqrt(1.0*nz)*ABSTOL + RELTOL* ((rho*u).norm());
+                if ( (r_norm<eps_pri)  && (s_norm<eps_dual) ) {
+                    z_a.col(i) = z;
+                    u_a.col(i) = u;
+                    rho_a(i) = rho;
+                    RAll.block(0,3*i,3,3) = R; 
+                    objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
+                                + lambda(i) * barycentric_area(i) * (R*n).cwiseAbs().sum();
+                    objVal_a(i) = objVal;
+                    break;
+                }
             }
 
-            z_a.col(i) = z;
-            u_a.col(i) = u;
-            rho_a(i) = rho;
-            RAll.block(0,3*i,3,3) = R; 
-            objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
-                        + lambda(i) * barycentric_area(i) * (R*n).cwiseAbs().sum();
-            objVal_a(i) = objVal;
+            // z_a.col(i) = z;
+            // u_a.col(i) = u;
+            // rho_a(i) = rho;
+            // RAll.block(0,3*i,3,3) = R; 
+            // objVal = 0.5*((R*dV-dU)*W[i].asDiagonal()*(R*dV-dU).transpose()).trace()
+            //             + lambda(i) * barycentric_area(i) * (R*n).cwiseAbs().sum();
+            // objVal_a(i) = objVal;
             
         }   
     ,1000);
